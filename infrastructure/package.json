@@ -8,6 +8,7 @@
     "dependencies": {
         "@pulumi/azure-native": "^2.84.0",
         "@pulumi/docker": "^4.6.1",
-        "@pulumi/pulumi": "^3.113.0"
+        "@pulumi/pulumi": "^3.113.0",
+        "redis": "^4.7.0"
     }
 }

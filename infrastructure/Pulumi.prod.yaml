@@ -7,3 +7,5 @@ config:
   cst8918-a03-infra:memory: '2'
   cst8918-a03-infra:prefixName: 'cst8918-a03-parm0100'
   cst8918-a03-infra:imageTag: 'v0.2.0'
+  cst8918-a03-infra:weatherApiKey:
+    secure: AAABACptD7qodSHMO7wCmdJhsXfmyQOsUEluCPp/qIGESeh/pygHpm2yA1DpvP+DCO3J7RH2PIL/tzgODfOHjQ==
