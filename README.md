@@ -84,10 +84,10 @@ Start with setting the desired Azure region for your production deployment. Our 
 pulumi config set azure-native:location westus3
 ```
 
-We will use the Pulumi Docker library module to generate the containerize image. It needs to know the path to find the _Dockerfile_ for our application, the public port number to expose, and the CPU and Memory resource limits.
+We will use the Pulumi Docker-Build library module to generate the containerize image. It needs to know the path to find the _Dockerfile_ for our application, the public port number to expose, and the CPU and Memory resource limits.
 
 > [!TIP]
-> See the [Pulumi Docker Library Docs](https://www.pulumi.com/registry/packages/docker/) for more information.
+> See the [Pulumi Docker-Build Library Docs](https://www.pulumi.com/registry/packages/docker-build/) for more information.
 
 You can edit the `Pulumi.prod.yaml` file directly to add the remaining config params. It should look like this.
 
@@ -111,7 +111,7 @@ config:
 Since we are going to deploy Docker containers on Azure, you will need to install a couple of extra Pulumi modules. Make sure that you are still in the `infrastructure` folder, then run ...
 
 ```sh
-npm i @pulumi/docker @pulumi/azure-native
+npm i @pulumi/docker-build @pulumi/azure-native
 ```
 
 > [!TIP]
@@ -223,26 +223,29 @@ Outputs:
 
 #### Create the Docker image and store it in the container registry
 
-Import the `@pulumi/docker` module at the top of the index.ts file and then append the container definition to the bottom of the file. Of note, the `build.platform` option tells Docker what the target runtime architecture is. This will make sure to pull the right base image when processing the Dockerfile.
+Import the `@pulumi/docker-build` module at the top of the index.ts file and then append the container definition to the bottom of the file. Of note, the `platforms` option tells Docker to build the image for both `linux/amd64` and `linux/arm64` runtime architectures. This will make sure to pull the right base image when processing the Dockerfile, and give us the flexibility to deploy the same Docker image to both platforms.
 
 ```ts
 // Other imports at the top of the module
-import * as docker from '@pulumi/docker'
+import * as dockerBuild from '@pulumi/docker-build'
 
 // ... rest of the code
 
 // Define the container image for the service.
-const image = new docker.Image(`${prefixName}-image`, {
-  imageName: pulumi.interpolate`${registry.loginServer}/${imageName}:${imageTag}`,
-  build: {
-    context: appPath,
-    platform: 'linux/amd64',
-  },
-  registry: {
-    server: registry.loginServer,
-    username: registryCredentials.username,
-    password: registryCredentials.password,
-  },
+const image = new dockerBuild.Image(`${prefixName}-image`, {
+  tags: [pulumi.interpolate`${registry.loginServer}/${imageName}:${imageTag}`],
+  context: { location: appPath },
+  dockerfile: { location: `${appPath}/Dockerfile` },
+  target: 'production',
+  platforms: ['linux/amd64', 'linux/arm64'],
+  push: true,
+  registries: [
+    {
+      address: registry.loginServer,
+      username: registryCredentials.username,
+      password: registryCredentials.password,
+    },
+  ],
 })
 ```
 
@@ -283,7 +286,7 @@ const containerGroup = new containerinstance.ContainerGroup(
     containers: [
       {
         name: imageName,
-        image: image.imageName,
+        image: image.ref,
         ports: [
           {
             port: containerPort,
