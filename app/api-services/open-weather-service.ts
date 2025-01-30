@@ -53,19 +53,3 @@ export async function getGeoCoordsForPostalCode(
   const data = response.json()
   return data
 }
-
-export async function fetchWeatherData({
-  lat,
-  lon,
-  units
-}: FetchWeatherDataParams) {
-  const queryString = `lat=${lat}&lon=${lon}&units=${units}`
-
-  const cacheEntry = await redis.get(queryString)
-  if (cacheEntry) return JSON.parse(cacheEntry)
-
-  const response = await fetch(`${BASE_URL}?${queryString}&appid=${API_KEY}`)
-  const data = await response.text() // avoid an unnecessary extra JSON.stringify
-  await redis.set(queryString, data, {PX: TEN_MINUTES}) // The PX option sets the expiry time
-  return JSON.parse(data)
-}
